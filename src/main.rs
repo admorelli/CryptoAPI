@@ -1,22 +1,23 @@
 #![allow(incomplete_features)]
 #![feature(generic_const_exprs)]
 #[macro_use] extern crate rocket;
+#[macro_use] extern crate diesel_migrations;
+#[macro_use] extern crate diesel;
 
 use rocket_prometheus::PrometheusMetrics;
+use rocket_sync_db_pools::{database};
 
 mod api;
 mod pages;
 mod security;
 mod models;
 
-
-
-
 #[launch]
 async fn rocket() -> _ {
     let prometheus = PrometheusMetrics::new();
     rocket::build()
     .attach(prometheus.clone())
+    .attach(models::diesel_sqlite::stage())
     .mount("/metrics", prometheus)
     .mount("/", routes![pages::index::index, pages::index::protected])
     .mount("/api/category", routes![
