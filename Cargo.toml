@@ -1,0 +1,22 @@
+[package]
+name = "cripto_api"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+rocket = "0.5.0-rc.2"
+rocket_okapi = "0.5.1"
+rocket_prometheus = "0.10.0-rc.3"
+rocket-validation = "0.1.0"
+
+[dependencies.sqlx]
+version = "0.6.2"
+default-features = true
+features = ["macros", "offline", "migrate", "runtime-tokio-rustls"]
+
+[dependencies.rocket_db_pools]
+version = "0.1.0-rc.2"
+features = ["sqlx_sqlite"]
+
