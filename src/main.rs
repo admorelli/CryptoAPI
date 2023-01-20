@@ -2,12 +2,10 @@
 #![feature(generic_const_exprs)]
 #[macro_use] extern crate rocket;
 
-use database::bb8_util::{DbTypes, SurrealdbMan, SurrealdbBackend};
 use rocket_prometheus::PrometheusMetrics;
 
 mod api;
 mod pages;
-mod database;
 mod security;
 mod models;
 
@@ -17,16 +15,7 @@ mod models;
 #[launch]
 async fn rocket() -> _ {
     let prometheus = PrometheusMetrics::new();
-    let tp = DbTypes::Surrealdb(SurrealdbMan{
-        backend: SurrealdbBackend::File{
-            file: "tempdb.db",
-            ns_name: "Teste", 
-            db_name: "Teste"
-        }
-    });
-    let pool = database::bb8_util::configure_bb8pool(tp).await.unwrap();
     rocket::build()
-    .manage(pool)
     .attach(prometheus.clone())
     .mount("/metrics", prometheus)
     .mount("/", routes![pages::index::index, pages::index::protected])

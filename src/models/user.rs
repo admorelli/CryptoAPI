@@ -1,4 +1,7 @@
-#[derive(Debug, Serialize, Deserialize)]
+use serde::{Serialize, Deserialize};
+use super::algorithm::Alg;
+
+#[derive(Debug, Serialize, Deserialize, Default)]
 pub struct User{
         pub id: String,
         ///secret used for authentication

@@ -11,6 +11,11 @@ rocket_okapi = "0.5.1"
 rocket_prometheus = "0.10.0-rc.3"
 rocket-validation = "0.1.0"
 
+[dependencies.serde]
+version = "1.0.152"
+features = ["derive", "serde_derive"]
+
+
 [dependencies.sqlx]
 version = "0.6.2"
 default-features = true

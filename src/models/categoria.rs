@@ -1,3 +1,6 @@
+use super::algorithm::Alg;
+use super::user::User;
+
 pub struct Categoria{
     pub id: String,
     pub is_unsafe: bool,
