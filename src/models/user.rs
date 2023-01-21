@@ -1,10 +1,5 @@
 use rocket::serde::{Serialize, Deserialize};
 
-use rocket_sync_db_pools::{diesel};
-
-use self::diesel::prelude::*;
-
-
 #[derive(Debug, Clone, Deserialize, Serialize, Queryable, Insertable)]
 #[serde(crate = "rocket::serde")]
 #[table_name="user"]
@@ -29,5 +24,5 @@ table! {
             salt -> VarChar,
             active -> Bool,
         }
-    }
+}
 

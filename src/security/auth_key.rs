@@ -1,10 +1,8 @@
 use diesel::QueryDsl;
-use rocket::{Rocket, Build};
 use rocket::http::Status;
 use rocket::request::{Outcome, Request, FromRequest};
-use crate::api;
 use crate::models::diesel_sqlite::Db;
-use crate::models::user::{user as user_schema, User};
+use crate::models::user::User;
 
 use diesel::prelude::*;
 
@@ -39,16 +37,16 @@ impl<'r> FromRequest<'r> for ApiKey {
                         Outcome::Success(ApiKey{user:users.first().unwrap().clone()})
                     }
                     else{
-                        Outcome::Failure((Status::BadRequest, ApiKeyError::Missing))
+                        Outcome::Failure((Status::BadRequest, ApiKeyError::Invalid))
                     }
                 },
-                _ => Outcome::Failure((Status::BadRequest, ApiKeyError::Missing))
+                _ => Outcome::Failure((Status::BadRequest, ApiKeyError::Invalid))
             }
         }
 
         match req.headers().get_one("x-api-key") {
             None => Outcome::Failure((Status::BadRequest, ApiKeyError::Missing)),
-            Some(key) => find_user((key.to_string()), Db::from_request(req).await.unwrap()).await    
+            Some(key) => find_user(key.to_string(), Db::from_request(req).await.unwrap()).await    
         }
     }
 }
