@@ -6,4 +6,4 @@ create table user(
     active bit not null
 );
 
-insert into user(api_key, secret, salt, active) values('secret_key', 'salt', true)
+insert into user(api_key, salt, active) values('secret_key', 'salt', true)

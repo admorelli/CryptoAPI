@@ -9,6 +9,7 @@ edition = "2021"
 rocket_okapi = "0.5.1"
 rocket_prometheus = "0.10.0-rc.3"
 rocket-validation = "0.1.0"
+rand = "0.8.5"
 
 
 [dependencies.rocket]

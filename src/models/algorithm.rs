@@ -7,7 +7,7 @@ use super::util::EnumStringParse;
 
 #[derive(Debug, Clone)]
 pub struct Alg{
-    pub id: String,
+    pub id: i32,
     pub crypto: CryptoAlgorithm,
     pub salting: SaltingStrategy
 }
@@ -33,7 +33,7 @@ impl  TryFrom<Algorithm> for Alg {
 #[serde(crate = "rocket::serde")]
 #[table_name="algorithm"]
 pub struct Algorithm{
-        pub id: String,
+        pub id: i32,
         //api key to be sent
         pub crypto: String,
         //secret used for authentication
@@ -50,8 +50,28 @@ impl  From<Alg> for Algorithm {
 
 table! {
         algorithm (id) {
-            id -> VarChar,
+            id -> Integer,
             crypto -> VarChar,
             salting -> VarChar,
         }
 }
+
+#[derive(Debug, Clone, Deserialize, Serialize, Queryable, Insertable)]
+#[serde(crate = "rocket::serde")]
+#[table_name="user_algorithm"]
+pub struct UserAlgorithm{
+    pub user_id: i32,
+    pub algorithm_id: i32,
+    pub ordering: i32
+}
+
+table! {
+    user_algorithm(user_id, algorithm_id){
+        user_id -> Integer,
+        algorithm_id -> Integer,
+        ordering -> Integer,
+    }
+}
+
+joinable!(user_algorithm -> algorithm(algorithm_id));
+allow_tables_to_appear_in_same_query!(user_algorithm, algorithm);

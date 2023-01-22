@@ -8,8 +8,6 @@ pub struct User{
         pub id: i32,
         //api key to be sent
         pub api_key: String,
-        //secret used for authentication
-        pub secret: String,
         //salt to be used by the user child objects(Categories, Hashes and Storages)
         pub salt: String,
         //set if the user is active
@@ -20,7 +18,6 @@ table! {
         user (id) {
             id -> Integer,
             api_key -> VarChar,
-            secret -> VarChar,
             salt -> VarChar,
             active -> Bool,
         }

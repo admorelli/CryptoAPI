@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use super::util::EnumStringParse;
+use super::{util::EnumStringParse, salting::SaltingStrategy};
 
 
 #[derive(Debug, Clone, Deserialize, Serialize, Queryable, Default)]
@@ -10,6 +10,14 @@ pub struct PlainTextAlgorithmn;
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub enum CryptoAlgorithm{
     Plain(PlainTextAlgorithmn)
+}
+
+impl CryptoAlgorithm{
+    pub fn apply(&self, key: &str, salt: &Vec<&str>, salter: &SaltingStrategy)-> String{
+        match self {
+            CryptoAlgorithm::Plain(c) => c.apply(key, salt, &salter)
+        }
+    }
 }
 
 impl Default for CryptoAlgorithm{
@@ -24,5 +32,15 @@ impl EnumStringParse for CryptoAlgorithm{
             "plain" => Some(CryptoAlgorithm::Plain(PlainTextAlgorithmn::default())),
             _ => Option::None
         }
+    }
+}
+
+trait ApplyCripto{
+    fn apply(&self, key: &str, salt: &Vec<&str>, salter: &SaltingStrategy) -> String;
+}
+
+impl ApplyCripto for PlainTextAlgorithmn{
+    fn apply(&self, key: &str, salt: &Vec<&str>, salter: &SaltingStrategy) -> String {
+        salter.apply(key, &salt)
     }
 }
