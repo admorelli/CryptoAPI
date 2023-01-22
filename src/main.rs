@@ -15,20 +15,8 @@ async fn rocket() -> _ {
     rocket::build()
     .attach(prometheus.clone())
     .attach(models::diesel_sqlite::stage())
+    .attach(pages::stage())
+    .attach(api::stage())
     .mount("/metrics", prometheus)
-    .mount("/", routes![pages::index::index, pages::index::protected])
-    .mount("/api/category", routes![
-        api::category_manager::index, 
-        api::category_manager::get, 
-        api::category_manager::add, 
-        api::category_manager::del]
-    )
-    .mount("/api/data", routes![
-        api::category_item::index,
-        api::category_item::get,
-        api::category_item::add,
-        api::category_item::del,
-        api::category_item::patch
-    ])
     //.mount("/", routes![index::protected])
 }

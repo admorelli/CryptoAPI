@@ -11,6 +11,8 @@ pub struct Hash{
     pub is_unsafe: bool,
     //salt used fo calculate its own key and its children(Hash and Storage)
     pub salt: String,
+    //hashed data to compare against
+    pub hashed_data: String,
     //category that own the hash
     pub owner: String
 }
@@ -20,6 +22,7 @@ table! {
         id -> VarChar,
         is_unsafe -> Bool,
         salt -> VarChar,
+        hashed_data -> VarChar,
         owner -> VarChar,
     }
 }

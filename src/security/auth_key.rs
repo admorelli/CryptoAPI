@@ -1,5 +1,4 @@
 use rocket::http::Status;
-use rocket::log::private::debug;
 use rocket::request::{Outcome, Request, FromRequest};
 use crate::models::algorithm::{Algorithm, Alg};
 use crate::models::diesel_sqlite::Db;
@@ -49,7 +48,6 @@ impl<'r> FromRequest<'r> for ApiKey {
                     }
                 },
                 Err(_e) => {
-                    println!("{}", _e);
                     Err(ApiKeyError::Invalid)
                 }
             }
