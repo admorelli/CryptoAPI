@@ -1,6 +1,6 @@
 use diesel::prelude::*;
 use rand::distributions::{Alphanumeric, DistString};
-use rocket::response::status::{Created, Unauthorized, Accepted, NotFound};
+use rocket::response::status::{Accepted, Created, NotFound, Unauthorized};
 use rocket::serde::json::Json;
 
 use crate::models::categoria::Categoria;
@@ -11,11 +11,7 @@ use crate::security::auth_key::ApiKey;
 #[get("/<category>")]
 pub async fn index(api_key: ApiKey, db: Db, category: String) -> Result<Json<Vec<Hash>>, String> {
     let alg = api_key.algorithms.first().unwrap();
-    let category_id = alg.crypto.apply(
-        category.as_str(),
-        &vec![api_key.user.salt.as_str()],
-        &alg.salting,
-    );
+    let category_id = alg.apply(category.as_str(), &vec![api_key.user.salt.as_str()]);
     let categoria = match db
         .run(move |conn| {
             use crate::models::categoria::categoria::dsl::*;
@@ -44,13 +40,15 @@ pub async fn index(api_key: ApiKey, db: Db, category: String) -> Result<Json<Vec
 }
 
 #[get("/<category>/<key>/<data>")]
-pub async fn get(api_key: ApiKey, db: Db, category: String, key: String, data: String) -> Result<Accepted<String>, NotFound<String>> {
+pub async fn get(
+    api_key: ApiKey,
+    db: Db,
+    category: String,
+    key: String,
+    data: String,
+) -> Result<Accepted<String>, NotFound<String>> {
     let alg = api_key.algorithms.first().unwrap();
-    let category_id = alg.crypto.apply(
-        category.as_str(),
-        &vec![api_key.user.salt.as_str()],
-        &alg.salting,
-    );
+    let category_id = alg.apply(category.as_str(), &vec![api_key.user.salt.as_str()]);
 
     let category_model = match db
         .run(move |conn| {
@@ -66,30 +64,34 @@ pub async fn get(api_key: ApiKey, db: Db, category: String, key: String, data: S
         Err(e) => return Err(NotFound(e.to_string())),
     };
 
-    let hash_id = alg.crypto.apply(
+    let hash_id = alg.apply(
         key.as_str(),
         &vec![api_key.user.salt.as_str(), category_model.salt.as_str()],
-        &alg.salting,
     );
 
-    let hash_model = match db.run(move |conn|{
-        hash
-            .filter(owner.eq(category_model.id))
-            .filter(id.eq(hash_id))
-            .first::<Hash>(conn)
-    }).await{
+    let hash_model = match db
+        .run(move |conn| {
+            hash.filter(owner.eq(category_model.id))
+                .filter(id.eq(hash_id))
+                .first::<Hash>(conn)
+        })
+        .await
+    {
         Ok(h) => h,
-        Err(e) => return Err(NotFound(e.to_string()))
+        Err(e) => return Err(NotFound(e.to_string())),
     };
-    
-    let hashed_data_string = alg.crypto.apply(
+
+    let hashed_data_string = alg.apply(
         data.as_str(),
-        &vec![api_key.user.salt.as_str(), category_model.salt.as_str(), hash_model.salt.as_str()],
-        &alg.salting,
+        &vec![
+            api_key.user.salt.as_str(),
+            category_model.salt.as_str(),
+            hash_model.salt.as_str(),
+        ],
     );
     if hashed_data_string == hash_model.hashed_data {
         Ok(Accepted(Some("found valid data".into())))
-    }else{
+    } else {
         Err(NotFound("Record not found or invalid".into()))
     }
 }
@@ -100,14 +102,10 @@ pub async fn add(
     db: Db,
     category: String,
     key: String,
-    data: String
+    data: String,
 ) -> Result<Created<String>, Unauthorized<String>> {
     let alg = api_key.algorithms.first().unwrap();
-    let category_id = alg.crypto.apply(
-        category.as_str(),
-        &vec![api_key.user.salt.as_str()],
-        &alg.salting,
-    );
+    let category_id = alg.apply(category.as_str(), &vec![api_key.user.salt.as_str()]);
     let generated_salt = Alphanumeric.sample_string(&mut rand::thread_rng(), 16);
 
     let category_model = match db
@@ -124,19 +122,17 @@ pub async fn add(
         Err(e) => return Err(Unauthorized(Some(e.to_string()))),
     };
 
-    let hash_id = alg.crypto.apply(
+    let hash_id = alg.apply(
         key.as_str(),
         &vec![api_key.user.salt.as_str(), category_model.salt.as_str()],
-        &alg.salting,
     );
-    let hashed_data_string = alg.crypto.apply(
+    let hashed_data_string = alg.apply(
         data.as_str(),
         &vec![
             api_key.user.salt.as_str(),
             category_model.salt.as_str(),
             generated_salt.as_str(),
         ],
-        &alg.salting,
     );
 
     let result = db
@@ -160,13 +156,15 @@ pub async fn add(
 }
 
 #[delete("/<category>/<key>/<data>")]
-pub async fn del(api_key: ApiKey, db: Db, category: String, key: String, data: String) -> Result<Accepted<String>, Unauthorized<String>> {
+pub async fn del(
+    api_key: ApiKey,
+    db: Db,
+    category: String,
+    key: String,
+    data: String,
+) -> Result<Accepted<String>, Unauthorized<String>> {
     let alg = api_key.algorithms.first().unwrap();
-    let category_id = alg.crypto.apply(
-        category.as_str(),
-        &vec![api_key.user.salt.as_str()],
-        &alg.salting,
-    );
+    let category_id = alg.apply(category.as_str(), &vec![api_key.user.salt.as_str()]);
     let generated_salt = Alphanumeric.sample_string(&mut rand::thread_rng(), 16);
 
     let category_model = match db
@@ -183,19 +181,17 @@ pub async fn del(api_key: ApiKey, db: Db, category: String, key: String, data: S
         Err(e) => return Err(Unauthorized(Some(e.to_string()))),
     };
 
-    let hash_id = alg.crypto.apply(
+    let hash_id = alg.apply(
         key.as_str(),
         &vec![api_key.user.salt.as_str(), category_model.salt.as_str()],
-        &alg.salting,
     );
-    let hashed_data_string = alg.crypto.apply(
+    let hashed_data_string = alg.apply(
         data.as_str(),
         &vec![
             api_key.user.salt.as_str(),
             category_model.salt.as_str(),
             generated_salt.as_str(),
         ],
-        &alg.salting,
     );
 
     let result = db

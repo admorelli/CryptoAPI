@@ -8,41 +8,40 @@ use super::util::EnumStringParse;
 pub struct ComplementSalting;
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
-pub enum SaltingStrategy{
-    Complement(ComplementSalting)
+pub enum SaltingStrategy {
+    Complement(ComplementSalting),
 }
 
-impl SaltingStrategy{
-    pub fn apply(&self, key: &str, salt: &Vec<&str>) -> String{
+impl SaltingStrategy {
+    pub fn apply(&self, key: &str, salt: &Vec<&str>) -> String {
         match self {
-            SaltingStrategy::Complement(s) => s.apply(key, &salt)
+            SaltingStrategy::Complement(s) => s.apply(key, &salt),
         }
     }
 }
 
-impl Default for SaltingStrategy{
-    fn default() -> Self{
+impl Default for SaltingStrategy {
+    fn default() -> Self {
         SaltingStrategy::Complement(ComplementSalting::default())
     }
 }
 
-
-impl EnumStringParse for SaltingStrategy{
-    fn str_to_enum(key: &str) -> Option<Self>{
+impl EnumStringParse for SaltingStrategy {
+    fn str_to_enum(key: &str) -> Option<Self> {
         match key {
             "complement" => Some(SaltingStrategy::Complement(ComplementSalting::default())),
-            _ => Option::None
+            _ => Option::None,
         }
     }
 }
-trait ApplySalting{
+trait ApplySalting {
     fn apply(&self, key: &str, salt: &Vec<&str>) -> String;
 }
 
-impl ApplySalting for ComplementSalting{
+impl ApplySalting for ComplementSalting {
     fn apply(&self, key: &str, salt: &Vec<&str>) -> String {
         let mut salted: String = key.to_string();
-        for  s in salt {
+        for s in salt {
             salted = format!("{}:{}", salted.as_str(), s);
         }
         salted

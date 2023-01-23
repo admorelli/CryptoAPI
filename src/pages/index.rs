@@ -2,7 +2,6 @@ use crate::security::auth_key::ApiKey;
 
 #[get("/")]
 pub async fn index() -> &'static str {
-    
     "Está api tem a intenção de armazenar validações criptograficas genericas para as rotas
     Lembrando que a base tem a intenção de ser fracamente associada tornando praticamente 
     impossivel a extração dos dados associados por conta de não sabermos o que está sendo validado

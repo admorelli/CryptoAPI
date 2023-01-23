@@ -1,9 +1,9 @@
-use rocket::serde::{Serialize, Deserialize};
+use rocket::serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Deserialize, Serialize, Queryable, Insertable)]
 #[serde(crate = "rocket::serde")]
-#[table_name="hash"]
-pub struct Hash{
+#[table_name = "hash"]
+pub struct Hash {
     //calculated by the key of a model(not saved) + user salt + category salt +its own salt
     //calculated by one of the algmodels associated to the category
     pub id: String,
@@ -14,7 +14,7 @@ pub struct Hash{
     //hashed data to compare against
     pub hashed_data: String,
     //category that own the hash
-    pub owner: String
+    pub owner: String,
 }
 
 table! {
@@ -26,4 +26,3 @@ table! {
         owner -> VarChar,
     }
 }
-

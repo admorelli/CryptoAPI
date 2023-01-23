@@ -1,9 +1,10 @@
-use diesel::prelude::*;
+use diesel::{delete, prelude::*};
 use rocket::response::status::*;
 use rocket::serde::json::Json;
 
-use crate::models::categoria::Categoria;
+use crate::models::categoria::{Categoria, CategoriaError};
 use crate::models::diesel_sqlite::Db;
+use crate::models::util::FromDb;
 use crate::security::auth_key::ApiKey;
 
 #[get("/")]
@@ -33,29 +34,10 @@ pub async fn get(
     db: Db,
     key: String,
 ) -> Result<Accepted<String>, NotFound<String>> {
-    use crate::models::categoria::categoria::dsl::*;
-
-    let alg = api_key.algorithms.first().unwrap();
-    let category_id = alg.crypto.apply(
-        key.as_str(),
-        &vec![api_key.user.salt.as_str()],
-        &alg.salting,
-    );
-    println!("{}", category_id.as_str());
-    let result = db
-        .run(move |conn| {
-            use diesel::dsl::{exists, select};
-            select(exists(
-                categoria
-                    .filter(owner.eq(api_key.user.id))
-                    .filter(id.eq(category_id.as_str())),
-            ))
-            .get_result::<bool>(conn)
-        })
-        .await;
+    let result = Categoria::from_db(&key, &db, &api_key).await;
     match result {
         Ok(res) => {
-            if res {
+            if res.len() > 0 {
                 Ok(Accepted(Some("Record found.".into())))
             } else {
                 Err(NotFound("Record not found.".into()))
@@ -73,14 +55,23 @@ pub async fn add(
 ) -> Result<Created<String>, Unauthorized<String>> {
     use crate::models::categoria::categoria::dsl::*;
     use rand::distributions::{Alphanumeric, DistString};
+
+    let categorias = Categoria::from_db(&key, &db, &api_key).await;
+    match categorias {
+        Ok(_) => return Err(Unauthorized(Some("Category already exists.".into()))),
+        Err(e) => match e {
+            CategoriaError::ConnectionFailed => {
+                return Err(Unauthorized(Some(
+                    "Failed to connect to the database.".into(),
+                )))
+            }
+            _ => (),
+        },
+    };
     let result = db
         .run(move |conn| {
             let alg = api_key.algorithms.first().unwrap();
-            let hash = alg.crypto.apply(
-                key.as_str(),
-                &vec![api_key.user.salt.as_str()],
-                &alg.salting,
-            );
+            let hash = alg.apply(key.as_str(), &vec![api_key.user.salt.as_str()]);
             let generated_salt = Alphanumeric.sample_string(&mut rand::thread_rng(), 16);
 
             diesel::insert_into(categoria)
@@ -107,50 +98,51 @@ pub async fn del(
     key: String,
 ) -> Result<Accepted<String>, Unauthorized<String>> {
     use crate::models::categoria::categoria::dsl::*;
-    use diesel::dsl::{exists, select};
-    let alg = api_key.algorithms.first().unwrap();
-    let hash = alg.crypto.apply(
-        key.as_str(),
-        &vec![api_key.user.salt.as_str()],
-        &alg.salting,
-    );
-    let result = db
-        .run(move |conn| {
-            select(exists(
-                categoria
-                    .filter(owner.eq(api_key.user.id))
-                    .filter(id.eq(hash.as_str())),
-            ))
-            .get_result::<bool>(conn)
-        })
-        .await;
 
-    match result {
-        Ok(res) => {
-            if res == false {
-                return Err(Unauthorized(Some("Record not found.".into())));
-            }
-            let hash = alg.crypto.apply(
-                key.as_str(),
-                &vec![api_key.user.salt.as_str()],
-                &alg.salting,
-            );
+    let categorias = Categoria::from_db(&key, &db, &api_key).await;
 
-            let delete = db
-                .run(move |conn| diesel::delete(categoria).filter(id.eq(hash)).execute(conn))
+    match categorias {
+        Ok(cats) => {
+            let keys = cats.clone().into_iter().map(|c| c.id).collect::<Vec<_>>();
+            let result = db
+                .run(move |conn| {
+                    use crate::models::hash::hash::dsl::*;
+                    use diesel::dsl::{exists, select};
+                    select(exists(hash.filter(owner.eq_any(keys)))).get_result::<bool>(conn)
+                })
                 .await;
 
-            match delete {
-                Ok(_) => return Ok(Accepted(Some("Record found.".into()))),
-                Err(_) => {
-                    return Err(Unauthorized(Some(
-                        "Failed to communicate to the database".into(),
-                    )))
+            match result {
+                Ok(res) => {
+                    if res {
+                        return Err(Unauthorized(Some(
+                            "The category still has items, aborting.".into(),
+                        )));
+                    }
+
+                    let keys2 = cats.into_iter().map(|c| c.id).collect::<Vec<_>>();
+                    let result = db
+                        .run(|conn| delete(categoria).filter(id.eq_any(keys2)).execute(conn))
+                        .await;
+                    match result {
+                        Ok(_success) => return Ok(Accepted(Some("Record found.".into()))),
+                        Err(_) => Err(Unauthorized(Some(
+                            "Failed to communicate to the database".into(),
+                        ))),
+                    }
                 }
+                Err(_) => Err(Unauthorized(Some(
+                    "Failed to communicate to the database".into(),
+                ))),
             }
         }
-        Err(_) => Err(Unauthorized(Some(
-            "Failed to communicate to the database".into(),
-        ))),
+        Err(e) => match e {
+            CategoriaError::NotFound => return Err(Unauthorized(Some("Record not found.".into()))),
+            CategoriaError::ConnectionFailed => {
+                return Err(Unauthorized(Some(
+                    "Failed to communicate to the database".into(),
+                )))
+            }
+        },
     }
 }
