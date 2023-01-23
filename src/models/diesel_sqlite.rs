@@ -3,7 +3,7 @@
 use rocket::fairing::AdHoc;
 //use rocket::serde::{Serialize, Deserialize};
 
-use rocket_sync_db_pools::{diesel, database};
+use rocket_sync_db_pools::{database, diesel};
 
 #[database("development")]
 pub struct Db(diesel::SqliteConnection);
@@ -20,7 +20,6 @@ pub struct Db(diesel::SqliteConnection);
 pub fn stage() -> AdHoc {
     AdHoc::on_ignite("Diesel SQLite Stage", |rocket| async {
         rocket.attach(Db::fairing())
-            //.attach(AdHoc::on_ignite("Diesel Migrations", run_migrations))
+        //.attach(AdHoc::on_ignite("Diesel Migrations", run_migrations))
     })
 }
-
