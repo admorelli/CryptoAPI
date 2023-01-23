@@ -10,26 +10,21 @@ use crate::security::auth_key::ApiKey;
 
 #[get("/<category>")]
 pub async fn index(api_key: ApiKey, db: Db, category: String) -> Result<Json<Vec<Hash>>, String> {
-    let alg = api_key.algorithms.first().unwrap();
-    let category_id = alg.apply(category.as_str(), &vec![api_key.user.salt.as_str()]);
-    let categoria = match db
-        .run(move |conn| {
-            use crate::models::categoria::categoria::dsl::*;
-            categoria
-                .filter(owner.eq(api_key.user.id))
-                .filter(id.eq(category_id))
-                .first::<Categoria>(conn)
-        })
-        .await
-    {
-        Ok(c) => c,
-        Err(e) => return Err(e.to_string()),
-    };
+    let categoria = Categoria::from_db(&category, &db, &api_key).await.unwrap();
 
     let hashes = match db
         .run(move |conn| {
             use crate::models::hash::hash::dsl::*;
-            hash.filter(owner.eq(categoria.id)).load::<Hash>(conn)
+            hash.filter(
+                owner.eq_any(
+                    categoria
+                        .clone()
+                        .into_iter()
+                        .map(|c| c.id)
+                        .collect::<Vec<_>>(),
+                ),
+            )
+            .load::<Hash>(conn)
         })
         .await
     {
@@ -47,52 +42,27 @@ pub async fn get(
     key: String,
     data: String,
 ) -> Result<Accepted<String>, NotFound<String>> {
-    let alg = api_key.algorithms.first().unwrap();
-    let category_id = alg.apply(category.as_str(), &vec![api_key.user.salt.as_str()]);
+    let hashes = Hash::from_db(&key, &category, &db, &api_key).await;
+    match hashes {
+        Ok(h) => {
+            let alg = h.0;
+            let hash_model = h.2;
+            let hashed_data_string = alg.apply(
+                &data,
+                &vec![
+                    &api_key.user.salt.as_str(),
+                    &h.1.salt,
+                    &hash_model.salt.as_str(),
+                ],
+            );
 
-    let category_model = match db
-        .run(move |conn| {
-            use crate::models::categoria::categoria::dsl::*;
-            categoria
-                .filter(owner.eq(api_key.user.id))
-                .filter(id.eq(category_id))
-                .first::<Categoria>(conn)
-        })
-        .await
-    {
-        Ok(c) => c,
-        Err(e) => return Err(NotFound(e.to_string())),
-    };
-
-    let hash_id = alg.apply(
-        key.as_str(),
-        &vec![api_key.user.salt.as_str(), category_model.salt.as_str()],
-    );
-
-    let hash_model = match db
-        .run(move |conn| {
-            hash.filter(owner.eq(category_model.id))
-                .filter(id.eq(hash_id))
-                .first::<Hash>(conn)
-        })
-        .await
-    {
-        Ok(h) => h,
-        Err(e) => return Err(NotFound(e.to_string())),
-    };
-
-    let hashed_data_string = alg.apply(
-        data.as_str(),
-        &vec![
-            api_key.user.salt.as_str(),
-            category_model.salt.as_str(),
-            hash_model.salt.as_str(),
-        ],
-    );
-    if hashed_data_string == hash_model.hashed_data {
-        Ok(Accepted(Some("found valid data".into())))
-    } else {
-        Err(NotFound("Record not found or invalid".into()))
+            if hash_model.hashed_data == hashed_data_string {
+                return Ok(Accepted(Some("Record found!".into())));
+            } else {
+                return Err(NotFound("Record not found or invalid".into()));
+            }
+        }
+        Err(e) => Err(NotFound(e.to_string())),
     }
 }
 

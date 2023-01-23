@@ -3,7 +3,6 @@ use rocket::serde::{Deserialize, Serialize};
 use crate::security::auth_key::ApiKey;
 
 use super::diesel_sqlite::Db;
-use super::util::FromDb;
 
 #[derive(Debug, Clone, Deserialize, Serialize, Queryable, Insertable)]
 #[serde(crate = "rocket::serde")]
@@ -30,14 +29,18 @@ pub enum CategoriaError {
     NotFound,
 }
 
-#[async_trait]
-impl FromDb for Categoria {
-    type Error = CategoriaError;
-    async fn from_db(
+impl std::fmt::Display for CategoriaError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self)
+    }
+}
+
+impl Categoria {
+    pub async fn from_db(
         key: &String,
         db: &Db,
         api_key: &ApiKey,
-    ) -> Result<Vec<Categoria>, Self::Error> {
+    ) -> Result<Vec<Categoria>, CategoriaError> {
         let user_id = api_key.user.id.clone();
         let hashes = api_key
             .algorithms
@@ -62,12 +65,12 @@ impl FromDb for Categoria {
                 if categorias.len() > 0 {
                     Ok(categorias)
                 } else {
-                    Err(Self::Error::NotFound)
+                    Err(CategoriaError::NotFound)
                 }
             }
             Err(e) => {
                 println!("{}", e.to_string());
-                Err(Self::Error::ConnectionFailed)
+                Err(CategoriaError::ConnectionFailed)
             }
         }
     }

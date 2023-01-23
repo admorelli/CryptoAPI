@@ -1,9 +1,5 @@
 use std::fmt::{Debug, Display};
 
-use crate::security::auth_key::ApiKey;
-
-use super::diesel_sqlite::Db;
-
 pub trait EnumStringParse
 where
     Self: Sized + Debug,
@@ -28,10 +24,3 @@ impl Display for Error {
 }
 impl std::error::Error for Error {}
 
-#[async_trait]
-pub trait FromDb {
-    type Error;
-    async fn from_db(key: &String, db: &Db, api_key: &ApiKey) -> Result<Vec<Self>, Self::Error>
-    where
-        Self: Sized;
-}
