@@ -1,5 +1,12 @@
+[development]
+port = 8000
+ip = "0.0.0.0"
 
+[production]
+port = 80
+ip = "0.0.0.0"
 
 [default.databases]
 development = { url = "development.sqlite" }
 production = {url = "postgres://crypto_api:aDRS8HkCJEZIuzK@top2.nearest.of.crypto-api-db.internal:5432/crypto_api?sslmode=disable"}
+

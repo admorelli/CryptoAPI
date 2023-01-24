@@ -5,8 +5,12 @@ use rocket::fairing::AdHoc;
 
 use rocket_sync_db_pools::{database, diesel};
 
-#[database("development")]
-pub struct Db(diesel::SqliteConnection);
+//#[database("development")]
+//pub struct Db(diesel::SqliteConnection);
+
+#[database("production")]
+pub struct Db(diesel::PgConnection);
+
 
 // This macro from `diesel_migrations` defines an `embedded_migrations` module
 // containing a function named `run`. This allows the example to be run and
