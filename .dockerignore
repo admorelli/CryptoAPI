@@ -11,5 +11,5 @@ target
 **\**\*.rs.bk
 
 # Ignore database files
-**\**\*.sqlite
+*.sqlite
 fly.toml
