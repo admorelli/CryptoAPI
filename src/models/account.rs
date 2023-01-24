@@ -2,8 +2,8 @@ use rocket::serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Deserialize, Serialize, Queryable, Insertable)]
 #[serde(crate = "rocket::serde")]
-#[table_name = "user"]
-pub struct User {
+#[table_name = "account"]
+pub struct Account {
     #[serde(skip_deserializing)]
     pub id: i32,
     //api key to be sent
@@ -15,7 +15,7 @@ pub struct User {
 }
 
 table! {
-        user (id) {
+        account (id) {
             id -> Integer,
             api_key -> VarChar,
             salt -> VarChar,

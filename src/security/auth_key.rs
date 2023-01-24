@@ -1,13 +1,13 @@
 use crate::models::algorithm::{Alg, Algorithm};
 use crate::models::diesel_db::Db;
-use crate::models::user::User;
+use crate::models::account::Account;
 use rocket::http::Status;
 use rocket::request::{FromRequest, Outcome, Request};
 
 use diesel::prelude::*;
 
 pub struct ApiKey {
-    pub user: User,
+    pub user: Account,
     pub algorithms: Vec<Alg>,
 }
 
@@ -25,16 +25,15 @@ impl<'r> FromRequest<'r> for ApiKey {
 
     async fn from_request(req: &'r Request<'_>) -> Outcome<Self, Self::Error> {
         /// Returns true if `key` is a valid API key string.
-        async fn find_user(key: &str, db: &Db) -> Result<User, ApiKeyError> {
-            use crate::models::user::user::dsl::*;
-            use diesel::QueryDsl;
+        async fn find_user(key: &str, db: &Db) -> Result<Account, ApiKeyError> {
+            use crate::models::account::account::dsl::*;
             let user_key = String::from(key);
 
             let user_result = db
                 .run(move |conn| {
-                    user.filter(api_key.eq(user_key))
+                    account.filter(api_key.eq(user_key))
                         .filter(active.eq(true))
-                        .load::<User>(conn)
+                        .load::<Account>(conn)
                 })
                 .await;
 

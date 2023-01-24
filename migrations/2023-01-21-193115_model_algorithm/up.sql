@@ -4,7 +4,7 @@ create table user_algorithm(
     algorithm_id integer not null,
     ordering integer not null,
     primary key (algorithm_id, user_id),
-    foreign key(user_id) references user(id),
+    foreign key(user_id) references account(id),
     foreign key(algorithm_id) references algorithm(id)
 );
 

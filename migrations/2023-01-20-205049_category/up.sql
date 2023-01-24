@@ -4,5 +4,5 @@ create table categoria(
     is_unsafe bit not null,
     salt varchar not null,
     owner integer not null,
-    foreign key(owner) references user(id)
+    foreign key(owner) references account(id)
 )

@@ -1,6 +1,6 @@
 -- Your SQL goes here
 create table algorithm(
-    id integer primary key autoincrement, 
+    id serial primary key, 
     crypto varchar not null, 
     salting varchar not null
 );
