@@ -3,7 +3,7 @@ port = 8000
 ip = "0.0.0.0"
 
 [release]
-port = 80
+port = 8000
 ip = "0.0.0.0"
 
 [default.databases]
