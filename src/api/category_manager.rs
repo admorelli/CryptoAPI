@@ -86,7 +86,10 @@ pub async fn add(
 
     match result {
         Ok(_) => Ok(Created::new("Success")),
-        Err(_) => Err(Unauthorized(Some("Failed to insert".into()))),
+        Err(e) => {
+            println!("{:?}", e);
+            Err(Unauthorized(Some("Failed to insert".into())))
+        },
     }
 }
 

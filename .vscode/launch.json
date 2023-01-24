@@ -7,15 +7,15 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug executable 'cripto_api'",
+            "name": "Debug executable 'crypto_api'",
             "cargo": {
                 "args": [
                     "build",
-                    "--bin=cripto_api",
-                    "--package=cripto_api"
+                    "--bin=crypto_api",
+                    "--package=crypto_api"
                 ],
                 "filter": {
-                    "name": "cripto_api",
+                    "name": "crypto_api",
                     "kind": "bin"
                 }
             },
@@ -25,16 +25,16 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug unit tests in executable 'cripto_api'",
+            "name": "Debug unit tests in executable 'crypto_api'",
             "cargo": {
                 "args": [
                     "test",
                     "--no-run",
-                    "--bin=cripto_api",
-                    "--package=cripto_api"
+                    "--bin=crypto_api",
+                    "--package=crypto_api"
                 ],
                 "filter": {
-                    "name": "cripto_api",
+                    "name": "crypto_api",
                     "kind": "bin"
                 }
             },

@@ -1,12 +1,13 @@
 [debug]
 port = 8000
-ip = "0.0.0.0"
+address = "0.0.0.0"
+log_level = "debug"
+[debug.databases]
+application = { url = "postgres://crypto_api:password@localhost/crypto_api", pool_size = 3 }
 
 [release]
 port = 8000
-ip = "0.0.0.0"
-
-[default.databases]
-development = { url = "postgres://crypto_api:password@localhost/crypto_api" }
-production = {url = "postgres://crypto_api:aDRS8HkCJEZIuzK@top2.nearest.of.crypto-api-db.internal:5432/crypto_api?sslmode=disable"}
-
+address = "0.0.0.0"
+log_level = "debug"
+[release.databases]
+application = { url = "postgres://crypto_api:aDRS8HkCJEZIuzK@top2.nearest.of.crypto-api-db.internal:5432/crypto_api?sslmode=disable", pool_size = 3 }
