@@ -1,29 +1,40 @@
-//use diesel_migrations::embed_migrations;
-//use rocket::{Rocket, Orbit};
-use rocket::fairing::AdHoc;
-//use rocket::serde::{Serialize, Deserialize};
+use rocket::{fairing::AdHoc};
 
 use rocket_sync_db_pools::{database, diesel};
 
-//#[database("development")]
-//pub struct Db(diesel::SqliteConnection);
-
-#[database("production")]
+#[database("application")]
+#[derive(MigrationConnection)]
 pub struct Db(diesel::PgConnection);
 
+#[allow(dead_code)]
+mod embedded_migrations {
+    use diesel_migrations::EmbedMigrations;
 
-// This macro from `diesel_migrations` defines an `embedded_migrations` module
-// containing a function named `run`. This allows the example to be run and
-// tested without any outside setup of the database.
-//embed_migrations!();
-
-// async fn run_migrations(rocket: Rocket<Orbit>) -> Result<(), Box<dyn Send + Sync + 'static>> {
-//     todo!()
-// }
+    #[derive(EmbedMigrations)]
+    struct Dummy;
+}
 
 pub fn stage() -> AdHoc {
     AdHoc::on_ignite("Diesel SQLite Stage", |rocket| async {
-        rocket.attach(Db::fairing())
-        //.attach(AdHoc::on_ignite("Diesel Migrations", run_migrations))
+        rocket
+            .attach(Db::fairing())
+            .attach(AdHoc::on_liftoff("Migrations", |rocket| {
+                Box::pin(async move {
+                    let database = Db::get_one(&rocket).await;
+                    match database{
+                        Some(db) =>{
+                            db.run(move |conn|{
+                                match embedded_migrations::run(conn){
+                                    Ok(_) => info!("Migration successfull"),
+                                    Err(e) => info!("{}", e)
+                                };
+                            }).await;
+                        },
+                        None => info!("Got no connection")
+                    }
+                    
+                    
+                })
+            }))
     })
 }

@@ -45,7 +45,10 @@ impl<'r> FromRequest<'r> for ApiKey {
                         Err(ApiKeyError::Invalid)
                     }
                 }
-                Err(_e) => Err(ApiKeyError::Invalid),
+                Err(_e) => {
+                    println!("{}",_e.to_string());
+                    Err(ApiKeyError::Invalid)
+                },
             }
         }
         async fn find_algs(key: i32, db: &Db) -> Result<Vec<Alg>, ApiKeyError> {

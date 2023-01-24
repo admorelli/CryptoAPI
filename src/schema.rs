@@ -5,7 +5,7 @@ diesel::table! {
         id -> Int4,
         api_key -> Varchar,
         salt -> Varchar,
-        active -> Bit,
+        active -> Bool,
     }
 }
 
@@ -20,7 +20,7 @@ diesel::table! {
 diesel::table! {
     categoria (id) {
         id -> Varchar,
-        is_unsafe -> Bit,
+        is_unsafe -> Bool,
         salt -> Varchar,
         owner -> Int4,
     }
@@ -29,7 +29,7 @@ diesel::table! {
 diesel::table! {
     hash (id) {
         id -> Varchar,
-        is_unsafe -> Bit,
+        is_unsafe -> Bool,
         salt -> Varchar,
         hashed_data -> Varchar,
         owner -> Varchar,
