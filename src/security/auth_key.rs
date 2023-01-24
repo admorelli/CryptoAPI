@@ -1,5 +1,5 @@
 use crate::models::algorithm::{Alg, Algorithm};
-use crate::models::diesel_sqlite::Db;
+use crate::models::diesel_db::Db;
 use crate::models::user::User;
 use rocket::http::Status;
 use rocket::request::{FromRequest, Outcome, Request};

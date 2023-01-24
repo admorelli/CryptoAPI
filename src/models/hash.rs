@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use rocket::serde::{Deserialize, Serialize};
 
 use super::algorithm::Alg;
-use super::diesel_sqlite::Db;
+use super::diesel_db::Db;
 use crate::models::categoria::{Categoria, CategoriaError};
 use crate::security::auth_key::ApiKey;
 

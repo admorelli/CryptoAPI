@@ -16,7 +16,7 @@ async fn rocket() -> _ {
     let prometheus = PrometheusMetrics::new();
     rocket::build()
         .attach(prometheus.clone())
-        .attach(models::diesel_sqlite::stage())
+        .attach(models::diesel_db::stage())
         .attach(pages::stage())
         .attach(api::stage())
         .mount("/metrics", prometheus)

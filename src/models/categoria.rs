@@ -2,7 +2,7 @@ use rocket::serde::{Deserialize, Serialize};
 
 use crate::security::auth_key::ApiKey;
 
-use super::diesel_sqlite::Db;
+use super::diesel_db::Db;
 
 #[derive(Debug, Clone, Deserialize, Serialize, Queryable, Insertable)]
 #[serde(crate = "rocket::serde")]

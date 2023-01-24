@@ -4,7 +4,7 @@ use rocket::response::status::{Accepted, Created, NotFound, Unauthorized};
 use rocket::serde::json::Json;
 
 use crate::models::categoria::Categoria;
-use crate::models::diesel_sqlite::Db;
+use crate::models::diesel_db::Db;
 use crate::models::hash::{hash::dsl::*, Hash};
 use crate::security::auth_key::ApiKey;
 

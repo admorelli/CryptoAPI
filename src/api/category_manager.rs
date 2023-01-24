@@ -3,7 +3,7 @@ use rocket::response::status::*;
 use rocket::serde::json::Json;
 
 use crate::models::categoria::{Categoria, CategoriaError};
-use crate::models::diesel_sqlite::Db;
+use crate::models::diesel_db::Db;
 use crate::security::auth_key::ApiKey;
 
 #[get("/")]
