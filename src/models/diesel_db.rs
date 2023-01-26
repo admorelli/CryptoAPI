@@ -29,7 +29,7 @@ pub fn stage() -> AdHoc {
                                     Err(e) => info!("{}", e),
                                 };
                             })
-                                .await;
+                              .await;
                         }
                         None => info!("Got no connection"),
                     }
