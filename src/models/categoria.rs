@@ -1,4 +1,3 @@
-use diesel::ExpressionMethods;
 use rocket::serde::{Deserialize, Serialize};
 
 use crate::security::auth_key::ApiKey;
