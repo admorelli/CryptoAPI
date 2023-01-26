@@ -21,17 +21,13 @@ impl TryFrom<Algorithm> for Alg {
     type Error = super::util::Error;
 
     fn try_from(value: Algorithm) -> Result<Self, Self::Error> {
-        match CryptoAlgorithm::string_to_enum(value.crypto) {
-            Some(crypto) => match SaltingStrategy::string_to_enum(value.salting) {
-                Some(salting) => Ok(Self {
-                    id: value.id,
-                    crypto,
-                    salting,
-                }),
-                None => Err(super::util::Error(Some("Conversion Failed".to_string()))),
-            },
-            None => Err(super::util::Error(Some("Conversion Failed".to_string()))),
-        }
+        let crypto = CryptoAlgorithm::string_to_enum(value.crypto).ok_or(super::util::Error(Some("Failed to parse CryptoAlgorithm".to_string())))?;
+        let salting = SaltingStrategy::string_to_enum(value.salting).ok_or(super::util::Error(Some("Failed to Parse SaltingStrategy".to_string())))?;
+        Ok(Self {
+            id: value.id,
+            crypto,
+            salting,
+        })
     }
 }
 
