@@ -1,4 +1,4 @@
-use rocket::{fairing::AdHoc};
+use rocket::fairing::AdHoc;
 
 use rocket_sync_db_pools::{database, diesel};
 
@@ -21,19 +21,18 @@ pub fn stage() -> AdHoc {
             .attach(AdHoc::on_liftoff("Migrations", |rocket| {
                 Box::pin(async move {
                     let database = Db::get_one(&rocket).await;
-                    match database{
-                        Some(db) =>{
-                            db.run(move |conn|{
-                                match embedded_migrations::run(conn){
+                    match database {
+                        Some(db) => {
+                            db.run(move |conn| {
+                                match embedded_migrations::run(conn) {
                                     Ok(_) => info!("Migration successfull"),
-                                    Err(e) => info!("{}", e)
+                                    Err(e) => info!("{}", e),
                                 };
-                            }).await;
-                        },
-                        None => info!("Got no connection")
+                            })
+                                .await;
+                        }
+                        None => info!("Got no connection"),
                     }
-                    
-                    
                 })
             }))
     })

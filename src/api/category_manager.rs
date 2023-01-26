@@ -89,7 +89,7 @@ pub async fn add(
         Err(e) => {
             println!("{:?}", e);
             Err(Unauthorized(Some("Failed to insert".into())))
-        },
+        }
     }
 }
 

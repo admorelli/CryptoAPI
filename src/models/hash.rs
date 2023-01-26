@@ -1,5 +1,5 @@
-use std::collections::HashMap;
 use rocket::serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 
 use super::algorithm::Alg;
 use super::diesel_db::Db;
@@ -65,34 +65,38 @@ impl Hash {
                         .clone()
                         .into_iter()
                         .map(|a| {
-                            (a.apply(
-                                key.as_str(),
-                                &vec![api_key.user.salt.as_str(), categoria.salt.as_str()],
-                            ), a.clone())
+                            (
+                                a.apply(
+                                    key.as_str(),
+                                    &vec![api_key.user.salt.as_str(), categoria.salt.as_str()],
+                                ),
+                                a.clone(),
+                            )
                         })
                         .collect::<HashMap<_, _>>();
                     let category_id = categoria.id.clone();
                     let hashes = hash_dic.clone().into_keys().collect::<Vec<_>>();
-                    let result = db.run(move |conn|{
-                        hash
-                            .filter(id.eq_any(hashes))
-                            .filter(owner.eq(category_id))
-                            .load::<Hash>(conn)
-                    }).await;
+                    let result = db
+                        .run(move |conn| {
+                            hash.filter(id.eq_any(hashes))
+                                .filter(owner.eq(category_id))
+                                .load::<Hash>(conn)
+                        })
+                        .await;
 
-                    match result{
-                        Ok(hash_model) =>{
-                            if hash_model.len() > 0{
+                    match result {
+                        Ok(hash_model) => {
+                            if hash_model.len() > 0 {
                                 let hh = hash_model.first().unwrap();
                                 let alg = &hash_dic[&hh.id];
-                                return Ok((alg.clone(), categoria, hh.clone()))
+                                return Ok((alg.clone(), categoria, hh.clone()));
                             }
-                        },
+                        }
                         Err(_e) => return Err(HashError::ConnectionFailed),
                     }
                 }
                 Err(HashError::NotFound)
-            },
+            }
             Err(e) => match e {
                 CategoriaError::NotFound => return Err(HashError::NotFound),
                 CategoriaError::ConnectionFailed => return Err(HashError::ConnectionFailed),
