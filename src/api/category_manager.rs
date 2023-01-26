@@ -106,45 +106,34 @@ pub async fn del(
     match categorias {
         Ok(cats) => {
             let keys = cats.clone().into_iter().map(|c| c.id).collect::<Vec<_>>();
-            let result = db
+            let res = db
                 .run(move |conn| {
                     use crate::models::hash::hash::dsl::*;
                     use diesel::dsl::{exists, select};
-                    select(exists(hash.filter(owner.eq_any(keys)))).get_result::<bool>(conn)
+                    select(exists(hash.filter(owner.eq_any(keys))))
+                        .get_result::<bool>(conn)
                 })
-                .await;
+                .await.expect("Failed to communicate to the database");
 
-            match result {
-                Ok(res) => {
-                    if res {
-                        return Err(Unauthorized(Some(
-                            "The category still has items, aborting.".into(),
-                        )));
-                    }
-
-                    let keys2 = cats.into_iter().map(|c| c.id).collect::<Vec<_>>();
-                    let result = db
-                        .run(|conn| delete(categoria).filter(id.eq_any(keys2)).execute(conn))
-                        .await;
-                    match result {
-                        Ok(_success) => return Ok(Accepted(Some("Record found.".into()))),
-                        Err(_) => Err(Unauthorized(Some(
-                            "Failed to communicate to the database".into(),
-                        ))),
-                    }
-                }
-                Err(_) => Err(Unauthorized(Some(
-                    "Failed to communicate to the database".into(),
-                ))),
+            if res {
+                return Err(Unauthorized(Some(
+                    "The category still has items, aborting.".into(),
+                )));
             }
+
+            let keys2 = cats.into_iter().map(|c| c.id).collect::<Vec<_>>();
+            let _success = db
+                .run(|conn| delete(categoria).filter(id.eq_any(keys2)).execute(conn))
+                .await.expect("Failed to communicate to the database");
+            Ok(Accepted(Some("Record found.".into())))
         }
         Err(e) => match e {
-            CategoriaError::NotFound => return Err(Unauthorized(Some("Record not found.".into()))),
+            CategoriaError::NotFound => Err(Unauthorized(Some("Record not found.".into()))),
             CategoriaError::ConnectionFailed => {
-                return Err(Unauthorized(Some(
+                Err(Unauthorized(Some(
                     "Failed to communicate to the database".into(),
                 )))
             }
-        },
+        }
     }
 }
