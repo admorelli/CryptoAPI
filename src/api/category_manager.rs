@@ -33,7 +33,7 @@ pub async fn get(
     db: Db,
     key: String,
 ) -> Result<Accepted<String>, NotFound<String>> {
-    let result = Categoria::from_db(&key, &db, &api_key).await;
+    let result = Categoria::from_db(&key, &db, &api_key, None).await;
     match result {
         Ok(res) => {
             if res.len() > 0 {
@@ -55,7 +55,7 @@ pub async fn add(
     use crate::models::categoria::categoria::dsl::*;
     use rand::distributions::{Alphanumeric, DistString};
 
-    let categorias = Categoria::from_db(&key, &db, &api_key).await;
+    let categorias = Categoria::from_db(&key, &db, &api_key, None).await;
     match categorias {
         Ok(_) => return Err(Unauthorized(Some("Category already exists.".into()))),
         Err(e) => match e {
@@ -101,7 +101,7 @@ pub async fn del(
 ) -> Result<Accepted<String>, Unauthorized<String>> {
     use crate::models::categoria::categoria::dsl::*;
 
-    let categorias = Categoria::from_db(&key, &db, &api_key).await;
+    let categorias = Categoria::from_db(&key, &db, &api_key, None).await;
 
     match categorias {
         Ok(cats) => {

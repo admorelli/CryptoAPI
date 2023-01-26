@@ -10,7 +10,7 @@ use crate::security::auth_key::ApiKey;
 
 #[get("/<category>")]
 pub async fn index(api_key: ApiKey, db: Db, category: String) -> Result<Json<Vec<Hash>>, String> {
-    let categoria = Categoria::from_db(&category, &db, &api_key).await.unwrap();
+    let categoria = Categoria::from_db(&category, &db, &api_key, None).await.unwrap();
 
     let hashes = match db
         .run(move |conn| {
@@ -24,7 +24,7 @@ pub async fn index(api_key: ApiKey, db: Db, category: String) -> Result<Json<Vec
                         .collect::<Vec<_>>(),
                 ),
             )
-            .load::<Hash>(conn)
+                .load::<Hash>(conn)
         })
         .await
     {
@@ -42,7 +42,7 @@ pub async fn get(
     key: String,
     data: String,
 ) -> Result<Accepted<String>, NotFound<String>> {
-    let hashes = Hash::from_db(&key, &category, &db, &api_key).await;
+    let hashes = Hash::from_db(&key, &category, &db, &api_key, None).await;
     match hashes {
         Ok(h) => {
             let alg = h.0;
@@ -74,37 +74,26 @@ pub async fn add(
     key: String,
     data: String,
 ) -> Result<Created<String>, Unauthorized<String>> {
-    let alg = api_key.algorithms.first().unwrap();
-    let category_id = alg.apply(category.as_str(), &vec![api_key.user.salt.as_str()]);
-    let generated_salt = Alphanumeric.sample_string(&mut rand::thread_rng(), 16);
+    let category_models = Categoria::from_db(&category, &db, &api_key, Some(true)).await.expect("Category not found.");
+    let category_model = category_models.first().expect(("Category not found."));
 
-    let category_model = match db
-        .run(move |conn| {
-            use crate::models::categoria::categoria::dsl::*;
-            categoria
-                .filter(owner.eq(api_key.user.id))
-                .filter(id.eq(category_id))
-                .first::<Categoria>(conn)
-        })
-        .await
-    {
-        Ok(c) => c,
-        Err(e) => return Err(Unauthorized(Some(e.to_string()))),
-    };
+    let alg = api_key.algorithms.first().expect("No valid algorithm Found");
+    let generated_salt = Alphanumeric.sample_string(&mut rand::thread_rng(), 16);
+    let category_salt = &category_model.clone().salt;
 
     let hash_id = alg.apply(
         key.as_str(),
-        &vec![api_key.user.salt.as_str(), category_model.salt.as_str()],
+        &vec![api_key.user.salt.as_str(), category_salt.as_str()],
     );
     let hashed_data_string = alg.apply(
         data.as_str(),
         &vec![
-            api_key.user.salt.as_str(),
-            category_model.salt.as_str(),
-            generated_salt.as_str(),
+            &api_key.user.salt.as_str(),
+            &category_model.salt.as_str(),
+            &generated_salt.as_str(),
         ],
     );
-
+    let category_id = category_model.id.clone();
     let result = db
         .run(move |conn| {
             diesel::insert_into(hash)
@@ -113,7 +102,7 @@ pub async fn add(
                     is_unsafe.eq(false),
                     salt.eq(generated_salt.as_str()),
                     hashed_data.eq(hashed_data_string),
-                    owner.eq(category_model.id),
+                    owner.eq(category_id),
                 ))
                 .execute(conn)
         })

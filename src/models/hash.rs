@@ -51,56 +51,45 @@ impl Hash {
         category: &String,
         db: &Db,
         api_key: &ApiKey,
+        only_valid: Option<bool>,
     ) -> Result<(Alg, Categoria, Hash), HashError> {
         use crate::models::hash::hash::dsl::*;
         use diesel::prelude::*;
 
-        let cats = Categoria::from_db(&category, &db, &api_key).await;
+        let categorias = Categoria::from_db(&category, &db, &api_key, only_valid.clone()).await.expect("Category not found");
+        for categoria in categorias {
+            let hash_dic = api_key
+                .algorithms
+                .clone()
+                .into_iter()
+                .map(|a| {
+                    (
+                        a.apply(
+                            key.as_str(),
+                            &vec![api_key.user.salt.as_str(), categoria.salt.as_str()],
+                        ),
+                        a.clone(),
+                    )
+                })
+                .collect::<HashMap<_, _>>();
+            let category_id = categoria.id.clone();
+            let hashes = hash_dic.clone().into_keys().collect::<Vec<_>>();
+            let valid = !only_valid.unwrap_or(false);
+            let hash_model = db
+                .run(move |conn| {
+                    hash.filter(id.eq_any(hashes))
+                        .filter(owner.eq(category_id))
+                        .filter(is_unsafe.eq_any(vec![valid, false]))
+                        .load::<Hash>(conn)
+                })
+                .await.expect("Connection Failed");
 
-        match cats {
-            Ok(categorias) => {
-                for categoria in categorias {
-                    let hash_dic = api_key
-                        .algorithms
-                        .clone()
-                        .into_iter()
-                        .map(|a| {
-                            (
-                                a.apply(
-                                    key.as_str(),
-                                    &vec![api_key.user.salt.as_str(), categoria.salt.as_str()],
-                                ),
-                                a.clone(),
-                            )
-                        })
-                        .collect::<HashMap<_, _>>();
-                    let category_id = categoria.id.clone();
-                    let hashes = hash_dic.clone().into_keys().collect::<Vec<_>>();
-                    let result = db
-                        .run(move |conn| {
-                            hash.filter(id.eq_any(hashes))
-                                .filter(owner.eq(category_id))
-                                .load::<Hash>(conn)
-                        })
-                        .await;
-
-                    match result {
-                        Ok(hash_model) => {
-                            if hash_model.len() > 0 {
-                                let hh = hash_model.first().unwrap();
-                                let alg = &hash_dic[&hh.id];
-                                return Ok((alg.clone(), categoria, hh.clone()));
-                            }
-                        }
-                        Err(_e) => return Err(HashError::ConnectionFailed),
-                    }
-                }
-                Err(HashError::NotFound)
+            if hash_model.len() > 0 {
+                let hh = hash_model.first().unwrap();
+                let alg = &hash_dic[&hh.id];
+                return Ok((alg.clone(), categoria, hh.clone()));
             }
-            Err(e) => match e {
-                CategoriaError::NotFound => return Err(HashError::NotFound),
-                CategoriaError::ConnectionFailed => return Err(HashError::ConnectionFailed),
-            },
         }
+        Err(HashError::NotFound)
     }
 }
