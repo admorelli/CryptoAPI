@@ -3,7 +3,7 @@ use std::collections::HashMap;
 
 use super::algorithm::Alg;
 use super::diesel_db::Db;
-use crate::models::categoria::{Categoria, CategoriaError};
+use crate::models::categoria::{Categoria};
 use crate::security::auth_key::ApiKey;
 
 #[derive(Debug, Clone, Deserialize, Serialize, Queryable, Insertable)]
@@ -47,7 +47,7 @@ impl std::fmt::Display for HashError {
 
 impl Hash {
     pub async fn from_db(
-        key: &String,
+        key: (&String, &String),
         category: &String,
         db: &Db,
         api_key: &ApiKey,
@@ -65,7 +65,7 @@ impl Hash {
                 .map(|a| {
                     (
                         a.apply(
-                            key.as_str(),
+                            key.0.as_str(),
                             &vec![api_key.user.salt.as_str(), categoria.salt.as_str()],
                         ),
                         a.clone(),
@@ -87,7 +87,12 @@ impl Hash {
             if hash_model.len() > 0 {
                 let hh = hash_model.first().unwrap();
                 let alg = &hash_dic[&hh.id];
-                return Ok((alg.clone(), categoria, hh.clone()));
+                let hashed_data_string = alg.apply(key.1, &vec![&api_key.user.salt, &categoria.salt, &hh.salt]);
+                if hashed_data_string == hh.hashed_data {
+                    return Ok((alg.clone(), categoria, hh.clone()));
+                } else {
+                    return Err(HashError::NotFound)
+                }
             }
         }
         Err(HashError::NotFound)

@@ -38,7 +38,7 @@ pub async fn get(
     key: String,
     data: String,
 ) -> Result<Accepted<String>, NotFound<String>> {
-    let hashes = Hash::from_db(&key, &category, &db, &api_key, None).await.expect("Hash not found");
+    let hashes = Hash::from_db((&key, &data), &category, &db, &api_key, None).await.expect("Hash not found");
     let alg = hashes.0;
     let hash_model = hashes.2;
     let hashed_data_string = alg.apply(
@@ -66,7 +66,7 @@ pub async fn add(
     data: String,
 ) -> Result<Created<String>, Unauthorized<String>> {
     let category_models = Categoria::from_db(&category, &db, &api_key, Some(true)).await.expect("Category not found.");
-    let category_model = category_models.first().expect(("Category not found."));
+    let category_model = category_models.first().expect("Category not found.");
 
     let alg = api_key.algorithms.first().expect("No valid algorithm Found");
     let generated_salt = Alphanumeric.sample_string(&mut rand::thread_rng(), 16);
@@ -113,50 +113,18 @@ pub async fn del(
     key: String,
     data: String,
 ) -> Result<Accepted<String>, Unauthorized<String>> {
-    let alg = api_key.algorithms.first().unwrap();
-    let category_id = alg.apply(category.as_str(), &vec![api_key.user.salt.as_str()]);
-    let generated_salt = Alphanumeric.sample_string(&mut rand::thread_rng(), 16);
-
-    let category_model = match db
-        .run(move |conn| {
-            use crate::models::categoria::categoria::dsl::*;
-            categoria
-                .filter(owner.eq(api_key.user.id))
-                .filter(id.eq(category_id))
-                .first::<Categoria>(conn)
-        })
-        .await
-    {
-        Ok(c) => c,
-        Err(e) => return Err(Unauthorized(Some(e.to_string()))),
-    };
-
-    let hash_id = alg.apply(
-        key.as_str(),
-        &vec![api_key.user.salt.as_str(), category_model.salt.as_str()],
-    );
-    let hashed_data_string = alg.apply(
-        data.as_str(),
-        &vec![
-            api_key.user.salt.as_str(),
-            category_model.salt.as_str(),
-            generated_salt.as_str(),
-        ],
-    );
-
-    let result = db
-        .run(move |conn| {
-            diesel::delete(hash)
-                .filter(id.eq(hash_id.as_str()))
-                .filter(owner.eq(category_model.id))
-                .filter(hashed_data.eq(hashed_data_string))
-                .execute(conn)
-        })
-        .await;
-
-    match result {
-        Ok(_) => Ok(Accepted(Some("Success".into()))),
-        Err(_) => Err(Unauthorized(Some("Failed to insert".into()))),
+    let hash_id = Hash::from_db((&key, &data), &category, &db, &api_key, None).await.or_else(|e| Err(Unauthorized(Some(format!("{}", e)))))?.2;
+    let result = db.run(move |conn| {
+        use diesel::dsl::delete;
+        use diesel::prelude::*;
+        delete(hash)
+            .filter(id.eq(hash_id.id))
+            .execute(conn)
+    }).await.or_else(|e| Err(Unauthorized(Some(format!("{}", e)))))?;
+    if result == 0 {
+        Ok(Accepted(Some("Success".into())))
+    } else {
+        Err(Unauthorized(Some("Failed to insert".into())))
     }
 }
 
