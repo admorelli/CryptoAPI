@@ -12,7 +12,7 @@ use crate::security::auth_key::ApiKey;
 pub async fn index(api_key: ApiKey, db: Db, category: String) -> Result<Json<Vec<Hash>>, String> {
     let categoria = Categoria::from_db(&category, &db, &api_key, None).await.unwrap();
 
-    let hashes = match db
+    let hashes = db
         .run(move |conn| {
             use crate::models::hash::hash::dsl::*;
             hash.filter(
@@ -26,11 +26,7 @@ pub async fn index(api_key: ApiKey, db: Db, category: String) -> Result<Json<Vec
             )
                 .load::<Hash>(conn)
         })
-        .await
-    {
-        Ok(h) => h.into_iter().collect::<Vec<_>>(),
-        Err(e) => return Err(e.to_string()),
-    };
+        .await.or_else(|e| Err(e.to_string()))?.into_iter().collect::<Vec<_>>();
     Ok(Json(hashes))
 }
 
@@ -42,27 +38,22 @@ pub async fn get(
     key: String,
     data: String,
 ) -> Result<Accepted<String>, NotFound<String>> {
-    let hashes = Hash::from_db(&key, &category, &db, &api_key, None).await;
-    match hashes {
-        Ok(h) => {
-            let alg = h.0;
-            let hash_model = h.2;
-            let hashed_data_string = alg.apply(
-                &data,
-                &vec![
-                    &api_key.user.salt.as_str(),
-                    &h.1.salt,
-                    &hash_model.salt.as_str(),
-                ],
-            );
+    let hashes = Hash::from_db(&key, &category, &db, &api_key, None).await.expect("Hash not found");
+    let alg = hashes.0;
+    let hash_model = hashes.2;
+    let hashed_data_string = alg.apply(
+        &data,
+        &vec![
+            &api_key.user.salt.as_str(),
+            &hashes.1.salt,
+            &hash_model.salt.as_str(),
+        ],
+    );
 
-            if hash_model.hashed_data == hashed_data_string {
-                return Ok(Accepted(Some("Record found!".into())));
-            } else {
-                return Err(NotFound("Record not found or invalid".into()));
-            }
-        }
-        Err(e) => Err(NotFound(e.to_string())),
+    if hash_model.hashed_data == hashed_data_string {
+        return Ok(Accepted(Some("Record found!".into())));
+    } else {
+        return Err(NotFound("Record not found or invalid".into()));
     }
 }
 
