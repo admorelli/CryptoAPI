@@ -1,6 +1,6 @@
+use crate::models::account::Account;
 use crate::models::algorithm::{Alg, Algorithm};
 use crate::models::diesel_db::Db;
-use crate::models::account::Account;
 use rocket::http::Status;
 use rocket::request::{FromRequest, Outcome, Request};
 
@@ -31,7 +31,8 @@ impl<'r> FromRequest<'r> for ApiKey {
 
             let user_result = db
                 .run(move |conn| {
-                    account.filter(api_key.eq(user_key))
+                    account
+                        .filter(api_key.eq(user_key))
                         .filter(active.eq(true))
                         .load::<Account>(conn)
                 })
@@ -46,9 +47,9 @@ impl<'r> FromRequest<'r> for ApiKey {
                     }
                 }
                 Err(_e) => {
-                    println!("{}",_e.to_string());
+                    println!("{}", _e.to_string());
                     Err(ApiKeyError::Invalid)
-                },
+                }
             }
         }
         async fn find_algs(key: i32, db: &Db) -> Result<Vec<Alg>, ApiKeyError> {
