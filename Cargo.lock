@@ -209,6 +209,7 @@ version = "0.1.0"
 dependencies = [
  "diesel",
  "diesel_migrations",
+ "indexmap",
  "rand",
  "rocket",
  "rocket-validation",

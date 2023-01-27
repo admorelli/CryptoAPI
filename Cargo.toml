@@ -10,6 +10,7 @@ rocket_prometheus = "0.10.0-rc.3"
 rocket-validation = "0.1.0"
 rand = "0.8.5"
 schemars = "0.8.11"
+indexmap = "1.8.2"
 
 [dependencies.rocket_okapi]
 version = "0.8.0-rc.2"
