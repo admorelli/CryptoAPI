@@ -2,12 +2,18 @@ use diesel::prelude::*;
 use rand::distributions::{Alphanumeric, DistString};
 use rocket::response::status::{Accepted, Created, NotFound, Unauthorized};
 use rocket::serde::json::Json;
-use rocket_okapi::openapi;
+use rocket_okapi::okapi::openapi3::OpenApi;
+use rocket_okapi::{openapi, openapi_get_routes_spec};
+use rocket_okapi::settings::OpenApiSettings;
 
 use crate::models::categoria::Categoria;
 use crate::models::diesel_db::Db;
 use crate::models::hash::{hash::dsl::*, Hash};
 use crate::security::auth_key::ApiKey;
+
+pub fn get_routes_and_docs(settings: &OpenApiSettings) -> (Vec<rocket::Route>, OpenApi) {
+    openapi_get_routes_spec![settings: index, get, add, del, patch]
+}
 
 #[openapi]
 #[get("/<category>")]

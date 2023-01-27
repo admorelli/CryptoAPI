@@ -12,44 +12,26 @@ mod pages;
 mod security;
 
 mod openapi {
-    use rocket::fairing::AdHoc;
-    use rocket_okapi::{rapidoc::*, swagger_ui::*, settings::UrlObject};
+    use rocket::fairing::{AdHoc};
+    use rocket_okapi::{swagger_ui::*, mount_endpoints_and_merged_docs};
 
     pub fn get_docs() -> SwaggerUIConfig {
         SwaggerUIConfig {
-            urls: vec![
-                UrlObject::new("Category", "/api/category/openapi.json"),
-                UrlObject::new("Data", "/api/data/openapi.json"),
-            ],
+            url: "/v1/openapi.json".to_string(),
             ..Default::default()
         }
     }
 
     pub fn stage() -> AdHoc {
-        AdHoc::on_ignite("OpenAPI Documentation", |rocket| async {
+        AdHoc::on_ignite("OpenAPI Documentation", |mut rocket| async {
+            let openapi_settings = rocket_okapi::settings::OpenApiSettings::default();
+            mount_endpoints_and_merged_docs! {
+                rocket, "/v1".to_owned(), openapi_settings,
+                    "/api/category" => crate::api::category_manager::get_routes_and_docs(&openapi_settings),
+                    "/api/data" => crate::api::category_item::get_routes_and_docs(&openapi_settings),
+            }
             rocket
                 .mount("/swagger", make_swagger_ui(&get_docs()))
-                .attach(AdHoc::on_liftoff("Migrations", |_| {
-                    Box::pin(async move {
-                        let doc = make_rapidoc(&RapiDocConfig {
-                            general: GeneralConfig {
-                                spec_urls: vec![UrlObject::new("General", "../../openapi.json")],
-                                ..Default::default()
-                            },
-                            hide_show: HideShowConfig {
-                                allow_spec_url_load: false,
-                                allow_spec_file_load: false,
-                                ..Default::default()
-                            },
-                            ..Default::default()
-                        }).into();
-                        if doc.len() > 0 {
-                            info!("openapi.json successfully generated.")
-                        } else {
-                            info!("failed to generate openapi.json.")
-                        }
-                    })
-                }))
         })
     }
 }
@@ -61,9 +43,7 @@ async fn rocket() -> _ {
         .attach(prometheus.clone())
         .attach(models::diesel_db::stage())
         .attach(pages::stage())
-        .attach(api::stage())
+        //.attach(api::stage())
         .attach(openapi::stage())
         .mount("/metrics", prometheus)
-
-    //.mount("/", routes![index::protected])
 }

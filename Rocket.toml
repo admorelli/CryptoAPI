@@ -3,7 +3,7 @@ port = 8000
 address = "0.0.0.0"
 log_level = "debug"
 [debug.databases]
-application = { url = "postgres://crypto_api:password@localhost/crypto_api", pool_size = 3 }
+application = { url = "postgres://crypto_api:password@localhost/crypto_api", pool_size = 1 }
 
 [release]
 port = 8000
