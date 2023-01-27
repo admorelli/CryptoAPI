@@ -1,10 +1,22 @@
 use rocket::fairing::AdHoc;
+use rocket_okapi::request::{OpenApiFromRequest, RequestHeaderInput};
+use rocket_okapi::gen::OpenApiGenerator;
 
 use rocket_sync_db_pools::{database, diesel};
 
 #[database("application")]
 #[derive(MigrationConnection)]
 pub struct Db(diesel::PgConnection);
+
+impl<'r> OpenApiFromRequest<'r> for Db {
+    fn from_request_input(
+        _gen: &mut OpenApiGenerator,
+        _name: String,
+        _required: bool,
+    ) -> rocket_okapi::Result<RequestHeaderInput> {
+        Ok(RequestHeaderInput::None)
+    }
+}
 
 #[allow(dead_code)]
 mod embedded_migrations {

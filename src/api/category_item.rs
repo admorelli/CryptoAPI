@@ -2,12 +2,14 @@ use diesel::prelude::*;
 use rand::distributions::{Alphanumeric, DistString};
 use rocket::response::status::{Accepted, Created, NotFound, Unauthorized};
 use rocket::serde::json::Json;
+use rocket_okapi::openapi;
 
 use crate::models::categoria::Categoria;
 use crate::models::diesel_db::Db;
 use crate::models::hash::{hash::dsl::*, Hash};
 use crate::security::auth_key::ApiKey;
 
+#[openapi]
 #[get("/<category>")]
 pub async fn index(api_key: ApiKey, db: Db, category: String) -> Result<Json<Vec<Hash>>, String> {
     let categoria = Categoria::from_db(&category, &db, &api_key, None).await.unwrap();
@@ -30,6 +32,7 @@ pub async fn index(api_key: ApiKey, db: Db, category: String) -> Result<Json<Vec
     Ok(Json(hashes))
 }
 
+#[openapi]
 #[get("/<category>/<key>/<data>")]
 pub async fn get(
     api_key: ApiKey,
@@ -57,6 +60,7 @@ pub async fn get(
     }
 }
 
+#[openapi]
 #[post("/<category>/<key>/<data>")]
 pub async fn add(
     api_key: ApiKey,
@@ -105,6 +109,7 @@ pub async fn add(
     }
 }
 
+#[openapi]
 #[delete("/<category>/<key>/<data>")]
 pub async fn del(
     api_key: ApiKey,
@@ -128,6 +133,7 @@ pub async fn del(
     }
 }
 
+#[openapi]
 #[patch("/<_category>/<_key>/<_data>")]
 pub fn patch(_api_key: ApiKey, _db: Db, _category: String, _key: String, _data: String) -> String {
     todo!()

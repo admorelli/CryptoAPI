@@ -1,4 +1,5 @@
 use rocket::fairing::AdHoc;
+use rocket_okapi::openapi_get_routes;
 
 pub mod category_item;
 pub mod category_manager;
@@ -8,7 +9,7 @@ pub fn stage() -> AdHoc {
         rocket
             .mount(
                 "/api/category",
-                routes![
+                openapi_get_routes![
                     category_manager::index,
                     category_manager::get,
                     category_manager::add,
@@ -17,7 +18,7 @@ pub fn stage() -> AdHoc {
             )
             .mount(
                 "/api/data",
-                routes![
+                openapi_get_routes![
                     category_item::index,
                     category_item::get,
                     category_item::add,
