@@ -1,8 +1,8 @@
 use rocket::serde::{Deserialize, Serialize};
 
-use super::crypto::CryptoAlgorithm;
 use super::salting::SaltingStrategy;
 use super::util::EnumStringParse;
+use super::crypto::enumerator::CryptoAlgorithm;
 
 #[derive(Debug, Clone)]
 pub struct Alg {
