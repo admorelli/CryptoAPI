@@ -1,11 +1,13 @@
 use diesel::{delete, prelude::*};
 use rocket::response::status::*;
 use rocket::serde::json::Json;
+use rocket_okapi::openapi;
 
 use crate::models::categoria::{Categoria, CategoriaError};
 use crate::models::diesel_db::Db;
 use crate::security::auth_key::ApiKey;
 
+#[openapi]
 #[get("/")]
 pub async fn index(key: ApiKey, db: Db) -> Result<Json<Vec<Categoria>>, String> {
     use crate::models::categoria::categoria::dsl::*;
@@ -27,6 +29,7 @@ pub async fn index(key: ApiKey, db: Db) -> Result<Json<Vec<Categoria>>, String> 
     //Ok("Endpoint to manage categorias")
 }
 
+#[openapi]
 #[get("/<key>")]
 pub async fn get(
     api_key: ApiKey,
@@ -46,6 +49,7 @@ pub async fn get(
     }
 }
 
+#[openapi]
 #[post("/<key>")]
 pub async fn add(
     api_key: ApiKey,
@@ -93,6 +97,7 @@ pub async fn add(
     }
 }
 
+#[openapi]
 #[delete("/<key>")]
 pub async fn del(
     api_key: ApiKey,

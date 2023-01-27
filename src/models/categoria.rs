@@ -1,10 +1,11 @@
 use rocket::serde::{Deserialize, Serialize};
+use rocket_okapi::JsonSchema;
 
 use crate::security::auth_key::ApiKey;
 
 use super::diesel_db::Db;
 
-#[derive(Debug, Clone, Deserialize, Serialize, Queryable, Insertable)]
+#[derive(Debug, Clone, Deserialize, Serialize, Queryable, Insertable, JsonSchema)]
 #[serde(crate = "rocket::serde")]
 #[table_name = "categoria"]
 pub struct Categoria {

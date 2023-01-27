@@ -1,12 +1,13 @@
 use rocket::serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use rocket_okapi::JsonSchema;
 
 use super::algorithm::Alg;
 use super::diesel_db::Db;
 use crate::models::categoria::{Categoria};
 use crate::security::auth_key::ApiKey;
 
-#[derive(Debug, Clone, Deserialize, Serialize, Queryable, Insertable)]
+#[derive(Debug, Clone, Deserialize, Serialize, Queryable, Insertable, JsonSchema)]
 #[serde(crate = "rocket::serde")]
 #[table_name = "hash"]
 pub struct Hash {

@@ -5,7 +5,10 @@ use rocket::http::Status;
 use rocket::request::{FromRequest, Outcome, Request};
 
 use diesel::prelude::*;
+use rocket_okapi::request::{OpenApiFromRequest, RequestHeaderInput};
+use rocket_okapi::gen::OpenApiGenerator;
 
+#[derive(OpenApiFromRequest)]
 pub struct ApiKey {
     pub user: Account,
     pub algorithms: Vec<Alg>,
@@ -17,6 +20,25 @@ pub enum ApiKeyError {
     AlgorithmMissing,
     Missing,
     Invalid,
+}
+
+impl<'r> OpenApiFromRequest<'r> for ApiKeyError {
+    fn from_request_input(
+        _gen: &mut OpenApiGenerator,
+        _name: String,
+        _required: bool,
+    ) -> rocket_okapi::Result<RequestHeaderInput> {
+        Ok(RequestHeaderInput::None)
+    }
+}
+
+#[rocket::async_trait]
+impl<'r> FromRequest<'r> for ApiKeyError {
+    type Error = ApiKeyError;
+
+    async fn from_request(_req: &'r Request<'_>) -> Outcome<Self, Self::Error> {
+        Outcome::Success(Self::Missing)
+    }
 }
 
 #[rocket::async_trait]
