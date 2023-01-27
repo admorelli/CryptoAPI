@@ -1,10 +1,11 @@
 use rocket::serde::{Deserialize, Serialize};
+use rocket_okapi::JsonSchema;
 
 use crate::security::auth_key::ApiKey;
 
 use super::diesel_db::Db;
 
-#[derive(Debug, Clone, Deserialize, Serialize, Queryable, Insertable)]
+#[derive(Debug, Clone, Deserialize, Serialize, Queryable, Insertable, JsonSchema)]
 #[serde(crate = "rocket::serde")]
 #[table_name = "categoria"]
 pub struct Categoria {
@@ -40,6 +41,7 @@ impl Categoria {
         key: &String,
         db: &Db,
         api_key: &ApiKey,
+        valid_only: Option<bool>,
     ) -> Result<Vec<Categoria>, CategoriaError> {
         let user_id = api_key.user.id.clone();
         let hashes = api_key
@@ -48,7 +50,8 @@ impl Categoria {
             .into_iter()
             .map(|a| a.apply(key.as_str(), &vec![api_key.user.salt.as_str()]))
             .collect::<Vec<_>>();
-        let results = db
+
+        let categorias = db
             .run(move |conn| {
                 use crate::models::categoria::categoria::dsl::*;
                 use diesel::prelude::*;
@@ -56,22 +59,15 @@ impl Categoria {
                 categoria
                     .filter(id.eq_any(hashes))
                     .filter(owner.eq(user_id))
+                    .filter(is_unsafe.eq_any(vec![!valid_only.unwrap_or(false), false]))
                     .load::<Categoria>(conn)
             })
-            .await;
+            .await.expect("Connection Failed");
 
-        match results {
-            Ok(categorias) => {
-                if categorias.len() > 0 {
-                    Ok(categorias)
-                } else {
-                    Err(CategoriaError::NotFound)
-                }
-            }
-            Err(e) => {
-                println!("{}", e.to_string());
-                Err(CategoriaError::ConnectionFailed)
-            }
+        if categorias.len() > 0 {
+            Ok(categorias)
+        } else {
+            Err(CategoriaError::NotFound)
         }
     }
 }
