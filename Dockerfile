@@ -1,7 +1,11 @@
-FROM rust:1 as builder
+FROM rust:1.67 as builder
 WORKDIR /app
 COPY . .
 RUN cargo install --path .
-RUN cargo install diesel_cli --no-default-features --features="postgres"
+
+FROM debian:bullseye-slim
+RUN apt-get update && apt-get install -y libpq-dev && rm -rf /var/lib/apt/lists/*
+COPY --from=builder /usr/local/cargo/bin/crypto_api /usr/local/bin/crypto_api
+COPY Rocket.toml Rocket.toml
 EXPOSE 8000
 CMD ["crypto_api"]
