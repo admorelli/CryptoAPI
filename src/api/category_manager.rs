@@ -51,7 +51,10 @@ pub async fn get(
                 Err(NotFound("Record not found.".into()))
             }
         }
-        Err(_) => Err(NotFound("Failed to communicate to the database".into())),
+        Err(e) => {
+            error!("{:?}", e);
+            Err(NotFound("Failed to communicate to the database".into()))
+        },
     }
 }
 

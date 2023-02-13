@@ -11,6 +11,6 @@ impl ApplyCripto for Sha1Algorithm {
         let mut hasher = Sha1::new();
         hasher.update(salter.apply(key, &salt).as_str());
         let result = hasher.finalize();
-        format!("{:X?}", result)
+        hex::encode(result)
     }
 }
