@@ -11,6 +11,10 @@ rocket-validation = "0.1.0"
 rand = "0.8.5"
 schemars = "0.8.11"
 indexmap = "1.8.2"
+sha1 = "*"
+sha2 = "*"
+hex-literal = "0.3.4"
+hex = "0.4.3"
 
 [dependencies.rocket_okapi]
 version = "0.8.0-rc.2"
