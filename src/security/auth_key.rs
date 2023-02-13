@@ -108,12 +108,15 @@ impl<'r> FromRequest<'r> for ApiKey {
         async fn get_user_rapid_api(req: &Request<'_>) -> Result<String, ApiKeyError> {
             const PROXY_SECRET: &str = "782282f0-aadf-11ed-9c04-3b47f63222ea";
             const API_KEY: &str = "d23801400bmsh4127a2c8179ca59p18e394jsna4f6d49f573c";
+            info!("obtaining X-RapidAPI-Key");
             let rapid_token = req.headers().get_one("X-RapidAPI-Key").ok_or(ApiKeyError::Missing)?;
-            info!("{}", rapid_token);
+            info!("got: {}", rapid_token);
+            info!("obtaining X-RapidAPI-Proxy-Secret");
             let rapid_secret = req.headers().get_one("X-RapidAPI-Proxy-Secret").ok_or(ApiKeyError::Missing)?;
-            info!("{}", rapid_secret);
+            info!("got: {}", rapid_secret);
+            info!("obtaining X-RapidAPI-User");
             let rapid_user = req.headers().get_one("X-RapidAPI-User").ok_or(ApiKeyError::Missing)?;
-            info!("{}", rapid_user);
+            info!("got: {}", rapid_user);
 
             if rapid_token != API_KEY || rapid_secret != PROXY_SECRET {
                 error!("Token or Secret invalid");
