@@ -11,10 +11,7 @@ pub struct Sha512Algorithm;
 
 impl ApplyCripto for Sha256Algorithm {
     fn apply(&self, key: &str, salt: &Vec<&str>, salter: &SaltingStrategy) -> String {
-        let mut hasher = Sha256::new();
-        hasher.update(salter.apply(key, &salt).as_str());
-        let result = hasher.finalize();
-        hex::encode(result)
+        hex::encode(Sha256::digest(salter.apply(key, &salt).as_str()))
     }
 }
 
@@ -23,6 +20,6 @@ impl ApplyCripto for Sha512Algorithm {
         let mut hasher = Sha512::new();
         hasher.update(salter.apply(key, &salt).as_str());
         let result = hasher.finalize();
-        format!("{:X?}", result)
+        hex::encode(result)
     }
 }

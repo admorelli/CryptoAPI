@@ -61,7 +61,7 @@ impl<'r> FromRequest<'r> for ApiKey {
                         .load::<Account>(conn)
                 })
                 .await.or_else(|e| {
-                println!("{}", e.to_string());
+                error!("account search: {}", e.to_string());
                 Err(ApiKeyError::Invalid)
             })?;
 
@@ -97,37 +97,11 @@ impl<'r> FromRequest<'r> for ApiKey {
         }
 
         async fn get_authentication(req: &Request<'_>) -> Result<String, ApiKeyError> {
-            let rapid_api_keys: Vec<&str> = [
-                "X-RapidAPI-Host",
-                "X-RapidAPI-Key",
-                "X-RapidAPI-Host",
-                "X-RapidAPI-User",
-                "X-RapidAPI-Subscription",
-                "X-RapidAPI-Version",
-            ].to_vec();
-
-            let headers = req.headers().clone().into_iter().filter(|header| {
-                if rapid_api_keys.contains(&header.name.as_str()) == true {
-                    true;
-                }
-                match header.name.as_str() {
-                    "x-api-key" => true,
-                    "X-Forwarded-For" => true,
-                    _ => false
-                }
-            }).collect::<Vec<_>>();
-
-            for header in headers.clone() {
-                if rapid_api_keys.contains(&header.name.as_str()) {
-                    return Ok(get_user_rapid_api(req).await?);
-                } else {
-                    return Ok(get_user_api_key(req).await?)
-                }
-            }
-            Err(ApiKeyError::Missing)
+            get_user_rapid_api(req).await.or(get_user_rapid_api(req).await)
         }
 
         async fn get_user_api_key(req: &Request<'_>) -> Result<String, ApiKeyError> {
+            error!("aqui2?");
             let key = req.headers().get_one("x-api-key").ok_or(ApiKeyError::Missing)?;
             Ok(key.to_string())
         }
@@ -153,54 +127,55 @@ impl<'r> FromRequest<'r> for ApiKey {
             let username = format!("{}:{}", rapid_token, rapid_user);
             let query_username = username.clone();
 
-            let inserted_id: i32 = match db.run(move |conn| {
+            db.run(move |conn| {
                 use models::account::account::dsl::*;
                 use diesel::dsl::*;
                 let account_exists: bool = match select(exists(account.filter(api_key.eq(&query_username))))
                     .get_result(conn) {
                     Ok(r) => r,
-                    Err(_) => false,
+                    Err(e) => {
+                        info!("failed to check for existing account({}){}", query_username, e);
+                        false
+                    },
                 };
+                info!("{}", account_exists);
 
                 let generated_salt = Alphanumeric.sample_string(&mut rand::thread_rng(), 16);
 
                 if account_exists == false {
-                    diesel::insert_into(account)
+                    let inserted_id: i32 = diesel::insert_into(account)
                         .values((
                             api_key.eq(query_username),
-                            salt.eq(generated_salt.as_str())
+                            salt.eq(generated_salt.as_str()),
+                            active.eq(true),
                         ))
                         .returning(id)
-                        .get_result(conn)
+                        .get_result(conn)?;
+                    //todo: for now insert sha256
+
+                    use models::algorithm::user_algorithm::dsl::*;
+                    info!("{}", inserted_id);
+                    let success = diesel::insert_into(user_algorithm)
+                        .values((
+                            user_id.eq(inserted_id),
+                            algorithm_id.eq(4),//todo: make it not be hard coded
+                            ordering.eq(0),
+                        )).execute(conn)?;
+
+                    if success == 0 {
+                        Ok(inserted_id)
+                    } else {
+                        Err(diesel::result::Error::NotFound)
+                    }
                 } else {
                     Ok(0)
                 }
-            }).await {
-                Ok(r) => r,
-                Err(_) => return Err(ApiKeyError::ConnectionFailed)
-            };
-
-            //todo: for now insert sha256
-            let result = match db.run(move |conn| {
-                use models::algorithm::user_algorithm::dsl::*;
-
-                diesel::insert_into(user_algorithm)
-                    .values((
-                        user_id.eq(inserted_id),
-                        algorithm_id.eq(4),//todo: make it not be hard coded
-                        ordering.eq(0),
-                    )
-                    ).execute(conn)
-            }).await {
-                Ok(r) => r,
-                Err(_) => return Err(ApiKeyError::ConnectionFailed)
-            };
-
-            if result == 0 {
-                Ok(username)
-            } else {
+            }).await.or_else(|e| {
+                error!("failed to insert account:{:?}", e);
                 Err(ApiKeyError::ConnectionFailed)
-            }
+            })?;
+
+            Ok(username)
         }
 
         let db = match Db::from_request(req).await {
