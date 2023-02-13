@@ -109,7 +109,7 @@ impl<'r> FromRequest<'r> for ApiKey {
             const PROXY_SECRET: &str = "782282f0-aadf-11ed-9c04-3b47f63222ea";
             const API_KEY: &str = "d23801400bmsh4127a2c8179ca59p18e394jsna4f6d49f573c";
             info!("obtaining X-RapidAPI-Key");
-            let rapid_token = req.headers().get_one("X-RapidAPI-Key").ok_or(ApiKeyError::Missing)?;
+            let rapid_token = req.headers().get_one("X-RapidAPI-Key").or(Some("rapid_api")).unwrap();
             info!("got: {}", rapid_token);
             info!("obtaining X-RapidAPI-Proxy-Secret");
             let rapid_secret = req.headers().get_one("X-RapidAPI-Proxy-Secret").ok_or(ApiKeyError::Missing)?;
