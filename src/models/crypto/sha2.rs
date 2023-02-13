@@ -14,7 +14,7 @@ impl ApplyCripto for Sha256Algorithm {
         let mut hasher = Sha256::new();
         hasher.update(salter.apply(key, &salt).as_str());
         let result = hasher.finalize();
-        format!("{:X?}", result)
+        hex::encode(result)
     }
 }
 
